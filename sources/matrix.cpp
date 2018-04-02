@@ -2,19 +2,52 @@
 
 matrix_t::matrix_t() : elements_{ nullptr }, rows_{ 0 }, collumns_{ 0 }
 {
+
+
 }
 
 matrix_t::matrix_t( matrix_t const & other )
 {
+    rows_ = other.rows();
+    collumns_ = other.collumns();
+    elements_ =  new float *[other.rows()];
+     for (std:: size_t i = 0; i < other.rows(); i++){
+         elements_[i] = new  float [other.collumns()];
+         for ( std:: size_t j = 0; j < other.collumns(); i++){
+             elements_[i][j] = other.elements_[i][j];
+
+         }
+     }
+
 }
 
 matrix_t & matrix_t::operator =( matrix_t const & other )
 {
-	return *this;
+    if (this != &other) {
+        for (std::size_t i = 0; i < rows_; ++i) {
+            delete[] elements_[i];
+        }
+        delete[] elements_;
+
+        elements_ = new float *[other.rows()];
+        for (std::size_t i = 0; i < other.rows(); ++i) {
+            elements_[i] = new float[other.collumns()];
+            for (std::size_t j = 0; j < other.collumns(); ++j) {
+                elements_[i][j] = other.elements_[i][j];
+            }
+        }
+        rows_ = other.rows();
+        collumns_ = other.collumns();
+    }
+    return *this;
 }
 
 matrix_t::~matrix_t()
 {
+    for (std:: size_t i = 0; i < rows_; i++){
+        delete[] elements_[i];
+    }
+    delete[] elements_;
 }
 
 std::size_t matrix_t::rows() const
@@ -29,38 +62,95 @@ std::size_t matrix_t::collumns() const
 
 matrix_t matrix_t::operator +( matrix_t const & other ) const
 {
-	matrix_t result;
+    assert( rows_ == other.rows_ && collumns_ == other.collumns_);
 
-	return result;
+    matrix_t result;
+    result.rows_ =  rows_;
+    result.collumns_ = collumns_;
+    result.elements_ = new float *[rows_];
+        for (std:: size_t i = 0; i < rows_; i++){
+            result.elements_ = new float [collumns_];
+            for (std:: size_t j = 0; j < collumns_; j++){
+                result.elements_[i][j] = elements_[i][j] + other.elements_[i][j];
+            }
+        }
+
+    return result;
 }
 
 matrix_t matrix_t::operator -( matrix_t const & other ) const
 {
-	matrix_t result;
+    assert( rows_ == other.rows_ && collumns_ == other.collumns_);
 
-	return result;
+    matrix_t result;
+    result.rows_ =  rows_;
+    result.collumns_ = collumns_;
+    result.elements_ = new float *[rows_];
+    for (std:: size_t i = 0; i < rows_; i++){
+        result.elements_ = new float [collumns_];
+        for (std:: size_t j = 0; j < collumns_; j++){
+            result.elements_[i][j] = elements_[i][j] - other.elements_[i][j];
+        }
+    }
+
+    return result;
 }
 
 matrix_t matrix_t::operator *( matrix_t const & other ) const
 {
-	matrix_t result;
+    assert(collumns_ == other.rows_);
 
-	return result;
+    matrix_t result;
+    result.rows_ =  rows_;
+    result.collumns_ = collumns_;
+    result.elements_ = new float *[rows_];
+
+    for (std:: size_t i = 0; i < rows_; i++){
+        result.elements_[i] = new float [other.collumns()];
+        for (std:: size_t j = 0; j < other.collumns(); j++){
+            for (std:: size_t k = 0; k < collumns_; j++){
+               result.elements_[i][j] += elements_[i][k]*other.elements_[k][j];
+            }
+        }
+    }
+
+    return result;
 }
 
 matrix_t & matrix_t::operator -=( matrix_t const & other )
 {
-	return *this;
+    assert(rows_ == other.rows_ && collumns_ == other.collumns_);
+    for (std::size_t i = 0; i < rows_; ++i) {
+        for (std::size_t j = 0; j < collumns_; ++j) {
+            elements_[i][j] = elements_[i][j] - other.elements_[i][j];
+        }
+    }
+    return *this;
 }
 
 matrix_t & matrix_t::operator +=( matrix_t const & other )
 {
-	return *this;
+    assert( rows_ == other.rows_ && collumns_ == other.collumns_);
+    for (std :: size_t i = 0; i < rows_;i++){
+        for (std :: size_t j = 0; j < rows_;j++){
+            elements_[i][j] = elements_[i][j] + other.elements_[i][j];
+
+        }
+    }
+    return *this;
 }
 
 matrix_t & matrix_t::operator *=( matrix_t const & other )
 {
-	return *this;
+    assert(collumns_ == other.rows_);
+    for (std::size_t i = 0; i < rows_; i++){
+        for (std::size_t j = 0; j < other.collumns(); j++){
+            for (std::size_t k = 0; k < collumns_; k++){
+                elements_[i][j] = elements_[i][k]*other.elements_[k][j];
+            }
+        }
+    }
+        return *this;
 }
 
 std::istream & matrix_t::read( std::istream & stream )
@@ -68,7 +158,7 @@ std::istream & matrix_t::read( std::istream & stream )
     std::size_t rows;
     std::size_t collumns;
     char symbol;
-    
+
     bool success = true;
     if( stream >> rows && stream >> symbol && symbol == ',' && stream >> collumns ) {
         float ** elements = new float *[ rows ];
@@ -81,13 +171,13 @@ std::istream & matrix_t::read( std::istream & stream )
                 }
             }
         }
-        
+
         if( success ) {
             for( std::size_t i = 0; i < rows_; ++i ) {
                 delete [] elements_[ i ];
             }
             delete [] elements_;
-            
+
             rows_ = rows;
             collumns_ = collumns;
             elements_ = elements;
@@ -102,12 +192,12 @@ std::istream & matrix_t::read( std::istream & stream )
     else {
         success = false;
     }
-    
+
     if( !success ) {
         stream.setstate( std::ios_base::failbit );
     }
-    
-	return stream;
+
+    return stream;
 }
 
 std::ostream & matrix_t::write( std::ostream & stream ) const
@@ -122,6 +212,7 @@ std::ostream & matrix_t::write( std::ostream & stream ) const
             }
         }
     }
-    
-	return stream;
+
+    return stream;
 }
+
